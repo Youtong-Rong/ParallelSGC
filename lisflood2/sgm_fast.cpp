@@ -1430,6 +1430,8 @@ inline void ProcessSubGridQBlock(const int block_index, const int grid_cols_padd
 	WetDryRowBound * wet_dry_bounds,
 	NUMERIC_TYPE * Qx_grid, NUMERIC_TYPE * Qy_grid,
 	NUMERIC_TYPE * Qx_old_grid, NUMERIC_TYPE * Qy_old_grid,
+	NUMERIC_TYPE* SGC_Qx_grid, NUMERIC_TYPE* SGC_Qy_grid, 
+	const NUMERIC_TYPE dx, const NUMERIC_TYPE dy,
 	const NUMERIC_TYPE max_Froude)
 {
 	const int * sg_pair_grid_index_lookup = sub_grid_layout->flow_info.flow_pair.sg_cell_grid_index_lookup;
@@ -1532,10 +1534,96 @@ inline void ProcessSubGridQBlock(const int block_index, const int grid_cols_padd
 
 				NUMERIC_TYPE dh = (surface_elevation0)-(surface_elevation1);
 				NUMERIC_TYPE surface_slope = -dh / effective_distance;
-				channel_Q = CalculateQ(surface_slope, R, delta_time, g, area, g_friction_squared, sg_flow_Q[flow_index], max_Froude);
+
+				
+				NUMERIC_TYPE Qu1 = C(0.0), Qu2 = C(0.0), Qu3 = C(0.0), Qu = C(0.0), Qvect = C(0.0), qcold = C(0.0), qc = C(0.0);
+				NUMERIC_TYPE SGCQu1 = C(0.0), SGCQu2 = C(0.0), SGCQu3 = C(0.0);
+				int pq0 = grid_index1;
+				qc = sg_flow_Q[flow_index]; // Get old q in m3/s		
+				qcold = qc;
+				 NUMERIC_TYPE dt = delta_time;
+				NUMERIC_TYPE  u = C(0.0), theta_fix = C(0.0);
+				Qvect = abs(qc);
+				if (grid_index1 - grid_index0 == 1)
+				{
+					u = Qvect / (hflow * dy);
+					theta_fix = C(1.0) - dt / dx * getmin(u, sqrt(g * hflow));
+					theta_fix = getmin(theta_fix, 1);
+					theta_fix = getmax(theta_fix, 0.5);
+
+					if (qc > 0.0)
+					{
+						Qu1 = Qy_grid[pq0 - 1];
+						SGCQu1 = SGC_Qy_grid[pq0 - 1];
+						Qu2 = Qx_grid[pq0 - 1];
+						SGCQu2=SGC_Qx_grid[pq0 - 1];
+						Qu3 = Qy_grid[pq0 - 1 + (grid_cols_padded)];
+						SGCQu3 = SGC_Qy_grid[pq0 - 1 + (grid_cols_padded)];
+						Qu = Qu1+ SGCQu1 + Qu2+ SGCQu2 - (Qu3+ SGCQu3);
+					}
+					else if (qc < 0.0)
+					{
+						Qu1 = Qy_grid[pq0];
+						SGCQu1 = SGC_Qy_grid[pq0];
+						Qu2 = Qx_grid[pq0];
+						SGCQu2 = SGC_Qx_grid[pq0];
+						Qu3 = Qy_grid[pq0 + grid_cols_padded];
+						SGCQu3 = SGC_Qy_grid[pq0 + grid_cols_padded];
+						Qu = -(Qu1+ SGCQu1) + Qu2+ SGCQu2 + Qu3+ SGCQu3;
+					}
+					else qc = C(0.0);				
+
+				}
+				else
+				{
+					u = Qvect / (hflow * dx);
+					theta_fix = C(1.0) - dt / dy * getmin(u, sqrt(g * hflow));
+					theta_fix = getmin(theta_fix, 1);
+					theta_fix = getmax(theta_fix, 0);
+					if (qc > 0.0)
+					{
+						Qu1 = Qy_grid[pq0 - (grid_cols_padded)];
+						SGCQu1 = SGC_Qy_grid[pq0 - (grid_cols_padded)];
+						Qu2 = Qx_grid[pq0 - (grid_cols_padded)];
+						SGCQu2 = SGC_Qx_grid[pq0 - (grid_cols_padded)];
+						Qu3 = Qx_grid[pq0 - (grid_cols_padded) + 1];
+						SGCQu3 = SGC_Qx_grid[pq0 - (grid_cols_padded) + 1];
+						Qu = Qu1+ SGCQu1 + Qu2+ SGCQu1 - (Qu3+ SGCQu3);
+					}
+					else if (qc < 0.0)
+					{
+						Qu1 = Qy_grid[pq0 + (grid_cols_padded)];
+						SGCQu1 = SGC_Qy_grid[pq0 + (grid_cols_padded)];
+						Qu2 = Qx_grid[pq0];
+						SGCQu2 = SGC_Qx_grid[pq0];
+						Qu3 = Qx_grid[pq0 + 1];
+						SGCQu3 = SGC_Qx_grid[pq0 + 1];
+						Qu = -(Qu2+ SGCQu2) + Qu1+ SGCQu1 + Qu3+ SGCQu3;
+					}
+					else qc = 0.0;
+
+					
+				}
+				qc = qc * theta_fix + Qu * (C(1.0) - theta_fix);
+
+				if (qcold * Qu <= 0)
+				{
+					qc = qcold;
+				}
+				
+				channel_Q = CalculateQ(surface_slope, R, delta_time, g, area, g_friction_squared, qc, max_Froude);
+
 			}
 		}
 		sg_flow_Q[flow_index] = channel_Q;
+		if (grid_index1 - grid_index0 == 1)
+		{
+			SGC_Qx_grid[grid_index1] = channel_Q;
+		}
+		else
+		{
+			SGC_Qy_grid[grid_index1] = channel_Q;
+		}
 		//sg_flow_ChannelRatio[flow_index] = getmin(channel_ratio, C(1.0)); //PFU set constant channel ratio in lisflood_processing
 
 		// Update wet-dry 
@@ -1614,7 +1702,7 @@ void SGC2_UpdateVelocitySubGrid_block(const int block_index, const int grid_cols
 	}
 }
 
-inline void SGC2_UpdateQx_row(const int grid_cols,
+inline void SGC2_UpdateQx_row(const int grid_cols,const int grid_cols_padded,
 	const int grid_row_index,
 	const int row_start_x_prev, const int row_end_x_prev,
 	const int row_start_x, const int row_end_x,
@@ -1625,6 +1713,8 @@ inline void SGC2_UpdateQx_row(const int grid_cols,
 
 	const NUMERIC_TYPE * g_friction_sq_x_grid,
 	NUMERIC_TYPE *Qx_grid, NUMERIC_TYPE *Qx_old_grid,
+	NUMERIC_TYPE* Qy_grid, NUMERIC_TYPE* Qy_old_grid,
+	const NUMERIC_TYPE dx, const NUMERIC_TYPE dy,
 	const NUMERIC_TYPE max_Froude)
 {
 #ifdef _DEBUG
@@ -1719,6 +1809,47 @@ inline void SGC2_UpdateQx_row(const int grid_cols,
 			NUMERIC_TYPE area = Fp_ywidth[index_next]* hflow;
 			NUMERIC_TYPE dh = (surface_elevation0)-(surface_elevation1);
 			surface_slope = -dh / row_dx;
+
+			NUMERIC_TYPE Qu1 = C(0.0), Qu2 = C(0.0), Qu3 = C(0.0), Qu = C(0.0), Qvect = C(0.0), qcold = C(0.0), qc = C(0.0);
+			
+			int pq0 = index_next;
+			qc = Qx_old_grid[index_next]; // Get old q in m3/s		
+			qcold = qc;
+			NUMERIC_TYPE dt = delta_time;
+			NUMERIC_TYPE  u = C(0.0), theta_fix = C(0.0);
+			Qvect = abs(qc);
+			
+			
+			u = Qvect / (hflow * dy);
+			theta_fix = C(1.0) - dt / dx * getmin(u, sqrt(g * hflow));
+			theta_fix = getmin(theta_fix, 1);
+			theta_fix = getmax(theta_fix, 0.5);
+
+			if (qc > 0.0)
+			{
+				Qu1 = Qy_grid[pq0 - 1];					
+				Qu2 = Qx_grid[pq0 - 1];					
+				Qu3 = Qy_grid[pq0 - 1 + (grid_cols_padded)];				
+				Qu = Qu1 +  Qu2  - (Qu3);
+			}
+			else if (qc < 0.0)
+			{
+				Qu1 = Qy_grid[pq0];					
+				Qu2 = Qx_grid[pq0];					
+				Qu3 = Qy_grid[pq0 + grid_cols_padded];					
+				Qu = -(Qu1) + Qu2 + Qu3;
+			}
+			else qc = C(0.0);
+
+			qc = qc * theta_fix + Qu * (C(1.0) - theta_fix);
+
+			if (qcold * Qu <= 0)
+			{
+				qc = qcold;
+			}
+
+
+
 			q_tmp = CalculateQ(surface_slope, hflow, delta_time, g, area, g_friction_sq_x_grid[index_next], Qx_old_grid[index_next], max_Froude);
 		}
 		else
@@ -1734,7 +1865,7 @@ inline void SGC2_UpdateQx_row(const int grid_cols,
 		memcpy(Qx_grid + grid_row_index + row_start_x + 1, Qx_old_grid + grid_row_index + row_start_x + 1, sizeof(NUMERIC_TYPE) * count);
 }
 
-inline void SGC2_UpdateQy_row(const int grid_cols,
+inline void SGC2_UpdateQy_row(const int grid_cols, const int grid_cols_padded,
 	const int grid_row_index,
 	const int row_start_y_prev, const int row_end_y_prev,
 	const int row_start_y, const int row_end_y,
@@ -1745,7 +1876,9 @@ inline void SGC2_UpdateQy_row(const int grid_cols,
 	const NUMERIC_TYPE * dem_grid, const NUMERIC_TYPE *h_grid,
 
 	const NUMERIC_TYPE * g_friction_sq_y_grid,
+	NUMERIC_TYPE* Qx_grid, NUMERIC_TYPE* Qx_old_grid,
 	NUMERIC_TYPE *Qy_grid, NUMERIC_TYPE *Qy_old_grid,
+	const NUMERIC_TYPE dx, const NUMERIC_TYPE dy,
 	const NUMERIC_TYPE max_Froude)
 {
 #ifdef _DEBUG
@@ -1834,6 +1967,46 @@ inline void SGC2_UpdateQy_row(const int grid_cols,
 			NUMERIC_TYPE area = Fp_xwidth[index_next]* hflow;
 			NUMERIC_TYPE dh = (surface_elevation0)-(surface_elevation1);
 			surface_slope = -dh / row_dy;
+
+
+			NUMERIC_TYPE Qu1 = C(0.0), Qu2 = C(0.0), Qu3 = C(0.0), Qu = C(0.0), Qvect = C(0.0), qcold = C(0.0), qc = C(0.0);
+
+			int pq0 = index_next;
+			qc = Qx_old_grid[index_next]; // Get old q in m3/s		
+			qcold = qc;
+			NUMERIC_TYPE dt = delta_time;
+			NUMERIC_TYPE  u = C(0.0), theta_fix = C(0.0);
+			Qvect = abs(qc);
+
+			u = Qvect / (hflow * dx);
+			theta_fix = C(1.0) - dt / dy * getmin(u, sqrt(g * hflow));
+			theta_fix = getmin(theta_fix, 1);
+			theta_fix = getmax(theta_fix, 0);
+
+						
+			if (qc > 0.0)
+			{
+				Qu1 = Qy_grid[pq0 - (grid_cols_padded)];				
+				Qu2 = Qx_grid[pq0 - (grid_cols_padded)];				
+				Qu3 = Qx_grid[pq0 - (grid_cols_padded)+1];				
+				Qu = Qu1  + Qu2 - (Qu3 );
+			}
+			else if (qc < 0.0)
+			{
+				Qu1 = Qy_grid[pq0 + (grid_cols_padded)];				
+				Qu2 = Qx_grid[pq0];				
+				Qu3 = Qx_grid[pq0 + 1];				
+				Qu = -(Qu2 ) + Qu1 + Qu3;
+			}
+			else qc = 0.0;
+			qc = qc * theta_fix + Qu * (C(1.0) - theta_fix);
+			if (qcold * Qu <= 0)
+			{
+				qc = qcold;
+			}
+
+
+
 			q_tmp = CalculateQ(surface_slope, hflow, delta_time, g, area, g_friction_sq_y_grid[index_next], Qy_old_grid[index_next], max_Froude);
 		}
 		else
@@ -4042,7 +4215,7 @@ NUMERIC_TYPE Do_Update_old(States *Statesptr, Pars *Parptr, Solver *Solverptr, A
 void Do_Update(const int grid_cols, const int grid_rows, const int grid_cols_padded,
 	const NUMERIC_TYPE delta_time, const NUMERIC_TYPE curr_time, const NUMERIC_TYPE tstart, const NUMERIC_TYPE depth_thresh, const NUMERIC_TYPE g,
 	NUMERIC_TYPE *h_grid, NUMERIC_TYPE *volume_grid,
-	NUMERIC_TYPE *Qx_grid, NUMERIC_TYPE *Qy_grid, NUMERIC_TYPE *Qx_old_grid, NUMERIC_TYPE *Qy_old_grid,
+	NUMERIC_TYPE *Qx_grid, NUMERIC_TYPE *Qy_grid, NUMERIC_TYPE *Qx_old_grid, NUMERIC_TYPE *Qy_old_grid, NUMERIC_TYPE* SGC_Qx_grid, NUMERIC_TYPE* SGC_Qy_grid,
 	NUMERIC_TYPE *initHtm_grid, NUMERIC_TYPE *maxHtm_grid, NUMERIC_TYPE *totalHtm_grid, NUMERIC_TYPE *maxH_grid,
 	NUMERIC_TYPE * maxVc_grid, NUMERIC_TYPE * maxVc_height_grid, NUMERIC_TYPE * maxHazard_grid,
 	NUMERIC_TYPE * Vx_grid, NUMERIC_TYPE * Vy_grid, NUMERIC_TYPE * Vx_max_grid, NUMERIC_TYPE * Vy_max_grid,
@@ -4112,7 +4285,7 @@ void Do_Update(const int grid_cols, const int grid_rows, const int grid_cols_pad
 				int row_start_x_prev = max(dem_data_bound.start, wet_dry_bounds->fp_h_prev[j].start - 1);
 				int row_end_x_prev = min(wet_dry_bounds->fp_h_prev[j].end, dem_data_bound.end - 1);
 
-				SGC2_UpdateQx_row(grid_cols,
+				SGC2_UpdateQx_row(grid_cols,grid_cols_padded,
 					grid_row_index,
 					row_start_x_prev, row_end_x_prev,
 					row_start_x, row_end_x,
@@ -4120,7 +4293,7 @@ void Do_Update(const int grid_cols, const int grid_rows, const int grid_cols_pad
 					g, delta_time, curr_time,
 					tmp_row,
 					dem_grid, h_grid,
-					g_friction_sq_x_grid, Qx_grid, Qx_old_grid, Parptr->max_Froude);
+					g_friction_sq_x_grid, Qx_grid, Qx_old_grid, Qy_grid, Qy_old_grid, Parptr->dx, Parptr->dy, Parptr->max_Froude);
 
 				if (Statesptr->routing == ON)
 				{
@@ -4161,7 +4334,7 @@ void Do_Update(const int grid_cols, const int grid_rows, const int grid_cols_pad
 				int row_start_y_prev = min(wet_dry_bounds->fp_h_prev[j].start, wet_dry_bounds->fp_h_prev[j + 1].start);
 				int row_end_y_prev = max(wet_dry_bounds->fp_h_prev[j].end, wet_dry_bounds->fp_h_prev[j + 1].end);
 
-				SGC2_UpdateQy_row(grid_cols,
+				SGC2_UpdateQy_row(grid_cols,grid_cols_padded,
 					grid_row_index,
 					row_start_y_prev, row_end_y_prev,
 					row_start_y, row_end_y,
@@ -4170,7 +4343,7 @@ void Do_Update(const int grid_cols, const int grid_rows, const int grid_cols_pad
 					g, delta_time, curr_time,
 					tmp_row,
 					dem_grid, h_grid,
-					g_friction_sq_y_grid, Qy_grid, Qy_old_grid, Parptr->max_Froude);
+					g_friction_sq_y_grid, Qx_grid, Qx_old_grid, Qy_grid, Qy_old_grid, Parptr->dx, Parptr->dy, Parptr->max_Froude);
 
 				if (Statesptr->routing == ON)
 				{
@@ -4203,7 +4376,7 @@ void Do_Update(const int grid_cols, const int grid_rows, const int grid_cols_pad
 
 #if _SGM_BY_BLOCKS == 0
 			ProcessSubGridQBlock(j, grid_cols_padded, depth_thresh, delta_time, g, sub_grid_layout_rows, sub_grid_state_rows, SGCptr, h_grid,
-				wet_dry_bounds, Qx_grid, Qy_grid, Qx_old_grid, Qy_old_grid, Parptr->max_Froude);
+				wet_dry_bounds, Qx_grid, Qy_grid, Qx_old_grid, Qy_old_grid, SGC_Qx_grid, SGC_Qy_grid,Parptr->dx,Parptr->dy, Parptr->max_Froude);
 			if (curr_time >= Parptr->SaveTotal && Statesptr->SGCvoutput == ON)
 			{
 				SGC2_UpdateVelocitySubGrid_block(j, grid_cols_padded, depth_thresh, delta_time, sub_grid_layout_rows, sub_grid_state_rows, SGCptr, h_grid);
@@ -4552,7 +4725,7 @@ void Do_Update(const int grid_cols, const int grid_rows, const int grid_cols_pad
 */
 void Fast_IterateLoop(const int grid_cols, const int grid_rows, const int grid_cols_padded,
 	NUMERIC_TYPE *h_grid, NUMERIC_TYPE *volume_grid, 
-	NUMERIC_TYPE *Qx_grid, NUMERIC_TYPE *Qy_grid, NUMERIC_TYPE *Qx_old_grid, NUMERIC_TYPE *Qy_old_grid,
+	NUMERIC_TYPE *Qx_grid, NUMERIC_TYPE *Qy_grid, NUMERIC_TYPE *Qx_old_grid, NUMERIC_TYPE *Qy_old_grid, NUMERIC_TYPE* SGC_Qx_grid, NUMERIC_TYPE* SGC_Qy_grid,
 	NUMERIC_TYPE *maxH_grid, NUMERIC_TYPE *maxHtm_grid, NUMERIC_TYPE *initHtm_grid, NUMERIC_TYPE *totalHtm_grid,
 	NUMERIC_TYPE *maxVc_grid, NUMERIC_TYPE *maxVc_height_grid, NUMERIC_TYPE *maxHazard_grid,
 	NUMERIC_TYPE *Vx_grid, NUMERIC_TYPE *Vy_grid, NUMERIC_TYPE *Vx_max_grid, NUMERIC_TYPE *Vy_max_grid,
@@ -4765,7 +4938,7 @@ void Fast_IterateLoop(const int grid_cols, const int grid_rows, const int grid_c
 
 
 			Do_Update(grid_cols, grid_rows, grid_cols_padded, delta_time,
-				curr_time,tstart, depth_thresh, g, h_grid, volume_grid, Qx_grid, Qy_grid, Qx_old_grid, Qy_old_grid,
+				curr_time,tstart, depth_thresh, g, h_grid, volume_grid, Qx_grid, Qy_grid, Qx_old_grid, Qy_old_grid,SGC_Qx_grid,SGC_Qy_grid,
 				initHtm_grid, maxHtm_grid, totalHtm_grid, maxH_grid,
 				maxVc_grid, maxVc_height_grid, maxHazard_grid,
 				Vx_grid, Vy_grid, Vx_max_grid, Vy_max_grid,
