@@ -1,0 +1,19 @@
+# Compiling on Bristol Bluecrystal4 server with intel compiler (with netcdf)   The latest cuda is libs/cuda/11.4.2-gcc-5.4.0-2.26 at 23 Dec 2021.
+#however, with the latest version of cuda,we got the following error: #error The version of CUB in your include path is not compatible with this release of Thrust. 
+#CUB is now included in th so you no Longer need to use your own checkout of CUB. Define THRUST IGNORE_CUB VERSION_CHECK to ignore this.
+#compared with bp3, we modified the NetCDF dir with the last 2 sentence in this file.
+#module load languages/intel/2020-u4
+#module load libs/cuda/10.2-gcc-5.4.0-2.26
+#module load tools/cmake/3.20.0
+#export CXX=`which icpc`
+#export CC=`which icc`
+#cmake -S . -B build -D_CONFIG=config/bluecrystal4-intel-netcdf
+#cmake --build build
+#
+# CMAKE config:
+set(_NETCDF 1)
+add_compile_definitions(_NUMERIC_MODE=1)
+add_compile_definitions(_ONLY_RECT=1)
+set(CMAKE_CXX_FLAGS "-Wall -qopt-report=2 -qopt-report-phase=vec -xhost -ipo")
+set(NetCDF_LIBRARY "/mnt/storage/software/libraries/gnu/netcdf-4.7.3/lib/libnetcdf.so")
+set(NetCDF_INCLUDE_DIR "/mnt/storage/software/libraries/gnu/netcdf-4.7.3/include")
