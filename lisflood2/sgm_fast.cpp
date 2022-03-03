@@ -1554,22 +1554,22 @@ inline void ProcessSubGridQBlock(const int block_index, const int grid_cols_padd
 					if (qc > 0.0)
 					{
 						//Qu1 = Qy_grid[pq0 - 1];
-						SGCQu1 = SGC_Qy_grid[pq0 - 1];
+						SGCQu1 = SGC_Qy_old_grid[pq0 - 1];
 						//Qu2 = Qx_grid[pq0 - 1];
-						SGCQu2=SGC_Qx_grid[pq0 - 1];
+						SGCQu2=SGC_Qx_old_grid[pq0 - 1];
 						//Qu3 = Qy_grid[pq0 - 1 + (grid_cols_padded)];
-						SGCQu3 = SGC_Qy_grid[pq0 - 1 + (grid_cols_padded)];
+						SGCQu3 = SGC_Qy_old_grid[pq0 - 1 + (grid_cols_padded)];
 						//Qu = Qu1+ SGCQu1 + Qu2+ SGCQu2 - (Qu3+ SGCQu3);
 						Qu = SGCQu1 + SGCQu2 - SGCQu3;
 					}
 					else if (qc < 0.0)
 					{
 						//Qu1 = Qy_grid[pq0];
-						SGCQu1 = SGC_Qy_grid[pq0];
+						SGCQu1 = SGC_Qy_old_grid[pq0];
 						//Qu2 = Qx_grid[pq0+1];
-						SGCQu2 = SGC_Qx_grid[pq0+1];
+						SGCQu2 = SGC_Qx_old_grid[pq0+1];
 						//Qu3 = Qy_grid[pq0 + grid_cols_padded];
-						SGCQu3 = SGC_Qy_grid[pq0 + grid_cols_padded];
+						SGCQu3 = SGC_Qy_old_grid[pq0 + grid_cols_padded];
 						//Qu = -(Qu1+ SGCQu1) + Qu2+ SGCQu2 + Qu3+ SGCQu3;
 						Qu = -SGCQu1 +  SGCQu2 + SGCQu3;
 					}
@@ -1585,22 +1585,22 @@ inline void ProcessSubGridQBlock(const int block_index, const int grid_cols_padd
 					if (qc > 0.0)
 					{
 						//Qu1 = Qy_grid[pq0 - (grid_cols_padded)];
-						SGCQu1 = SGC_Qy_grid[pq0 - (grid_cols_padded)];
+						SGCQu1 = SGC_Qy_old_grid[pq0 - (grid_cols_padded)];
 						//Qu2 = Qx_grid[pq0 - (grid_cols_padded)];
-						SGCQu2 = SGC_Qx_grid[pq0 - (grid_cols_padded)];
+						SGCQu2 = SGC_Qx_old_grid[pq0 - (grid_cols_padded)];
 						//Qu3 = Qx_grid[pq0 - (grid_cols_padded) + 1];
-						SGCQu3 = SGC_Qx_grid[pq0 - (grid_cols_padded) + 1];
+						SGCQu3 = SGC_Qx_old_grid[pq0 - (grid_cols_padded) + 1];
 						//Qu = Qu1+ SGCQu1 + Qu2+ SGCQu2 - (Qu3+ SGCQu3);
 						Qu =SGCQu1 + SGCQu2 - SGCQu3;
 					}
 					else if (qc < 0.0)
 					{
 						//Qu1 = Qy_grid[pq0 + (grid_cols_padded)];
-						SGCQu1 = SGC_Qy_grid[pq0 + (grid_cols_padded)];
+						SGCQu1 = SGC_Qy_old_grid[pq0 + (grid_cols_padded)];
 						//Qu2 = Qx_grid[pq0];
-						SGCQu2 = SGC_Qx_grid[pq0];
+						SGCQu2 = SGC_Qx_old_grid[pq0];
 						//Qu3 = Qx_grid[pq0 + 1];
-						SGCQu3 = SGC_Qx_grid[pq0 + 1];
+						SGCQu3 = SGC_Qx_old_grid[pq0 + 1];
 						//Qu = -(Qu2+ SGCQu2) + Qu1+ SGCQu1 + Qu3+ SGCQu3;
 						Qu = -SGCQu2 + SGCQu1 + SGCQu3;
 					}
@@ -1622,11 +1622,11 @@ inline void ProcessSubGridQBlock(const int block_index, const int grid_cols_padd
 		sg_flow_Q[flow_index] = channel_Q;
 		if (grid_index1 - grid_index0 == 1)
 		{
-			SGC_Qx_old_grid[grid_index1] = channel_Q;
+			SGC_Qx_grid[grid_index1] = channel_Q;
 		}
 		else
 		{
-			SGC_Qy_old_grid[grid_index1] = channel_Q;
+			SGC_Qy_grid[grid_index1] = channel_Q;
 		}
 		//sg_flow_ChannelRatio[flow_index] = getmin(channel_ratio, C(1.0)); //PFU set constant channel ratio in lisflood_processing
 
@@ -1817,7 +1817,7 @@ inline void SGC2_UpdateQx_row(const int grid_cols,const int grid_cols_padded,
 			NUMERIC_TYPE Qu1 = C(0.0), Qu2 = C(0.0), Qu3 = C(0.0), Qu = C(0.0), Qvect = C(0.0), qcold = C(0.0), qc = C(0.0);
 			
 			int pq0 = index_next;
-			qc = Qx_grid[index_next]; // Get old q in m3/s		
+			qc = Qx_old_grid[index_next]; // Get old q in m3/s		
 			qcold = qc;
 			NUMERIC_TYPE dt = delta_time;
 			NUMERIC_TYPE  u = C(0.0), theta_fix = C(0.0);
@@ -1835,7 +1835,7 @@ inline void SGC2_UpdateQx_row(const int grid_cols,const int grid_cols_padded,
 				//Qu2 = Qx_grid[pq0 - 1];					
 				//Qu3 = Qy_grid[pq0 - 1 + (grid_cols_padded)];				
 				//Qu = Qu1 +  Qu2  - (Qu3);
-				Qu = Qx_grid[pq0 - 1];
+				Qu = Qx_old_grid[pq0 - 1];
 			}
 			else if (qc < 0.0)
 			{
@@ -1843,7 +1843,7 @@ inline void SGC2_UpdateQx_row(const int grid_cols,const int grid_cols_padded,
 				//Qu2 = Qx_grid[pq0+1];					
 				//Qu3 = Qy_grid[pq0 + grid_cols_padded];					
 				//Qu = -(Qu1) + Qu2 + Qu3;
-				Qu = Qx_grid[pq0 + 1];
+				Qu = Qx_old_grid[pq0 + 1];
 			}
 			else qc = C(0.0);
 
@@ -1863,7 +1863,7 @@ inline void SGC2_UpdateQx_row(const int grid_cols,const int grid_cols_padded,
 			surface_slope = C(0.0);
 			q_tmp = C(0.0);
 		}
-		Qx_old_grid[index_next] = q_tmp;
+		Qx_grid[index_next] = q_tmp;
 		tmp_row[i] = surface_slope;
 	}
 	/*int count = row_end_x - row_start_x;
@@ -1978,7 +1978,7 @@ inline void SGC2_UpdateQy_row(const int grid_cols, const int grid_cols_padded,
 			NUMERIC_TYPE Qu1 = C(0.0), Qu2 = C(0.0), Qu3 = C(0.0), Qu = C(0.0), Qvect = C(0.0), qcold = C(0.0), qc = C(0.0);
 
 			int pq0 = index_next;
-			qc = Qy_grid[index_next]; // Get old q in m3/s		
+			qc = Qy_old_grid[index_next]; // Get old q in m3/s		
 			qcold = qc;
 			NUMERIC_TYPE dt = delta_time;
 			NUMERIC_TYPE  u = C(0.0), theta_fix = C(0.0);
@@ -1996,7 +1996,7 @@ inline void SGC2_UpdateQy_row(const int grid_cols, const int grid_cols_padded,
 				//Qu2 = Qx_grid[pq0 - (grid_cols_padded)];				
 				//Qu3 = Qx_grid[pq0 - (grid_cols_padded)+1];				
 				//Qu = Qu1  + Qu2 - (Qu3 );
-				Qu = Qy_grid[pq0 - (grid_cols_padded)];
+				Qu = Qy_old_grid[pq0 - (grid_cols_padded)];
 			}
 			else if (qc < 0.0)
 			{
@@ -2004,7 +2004,7 @@ inline void SGC2_UpdateQy_row(const int grid_cols, const int grid_cols_padded,
 				//Qu2 = Qx_grid[pq0];				
 				//Qu3 = Qx_grid[pq0 + 1];				
 				//Qu = -(Qu2 ) + Qu1 + Qu3;
-				Qu  = Qy_grid[pq0 + (grid_cols_padded)];
+				Qu  = Qy_old_grid[pq0 + (grid_cols_padded)];
 			}
 			else qc = 0.0;
 			qc = qc * theta_fix + Qu * (C(1.0) - theta_fix);
@@ -2022,7 +2022,7 @@ inline void SGC2_UpdateQy_row(const int grid_cols, const int grid_cols_padded,
 			surface_slope = C(0.0);
 			q_tmp = C(0.0);
 		}
-		Qy_old_grid[index_next] = q_tmp;
+		Qy_grid[index_next] = q_tmp;
 		tmp_row[i] = surface_slope;
 	}
 	/*int count = row_end_y - row_start_y;
@@ -4423,25 +4423,11 @@ void Do_Update(const int grid_cols, const int grid_rows, const int grid_cols_pad
 	// nowait clause added - disable the implicit barrier, since and explicit barrier used (stops both the update q threads as well as the single thread)
 
 	//youtong change no wait to barrier to make sure the updateQ are finished there
-#pragma omp barrier 
+#pragma omp single nowait 
 	{
 		//printf("overlapped single %d\n", omp_get_thread_num());
 
-		for (int j = 0; j < grid_rows; j++)
-		{
-			int dest_row_index = j * grid_cols_padded;
-			int source_bytes_per_row = sizeof(NUMERIC_TYPE) * grid_cols;
-			memcpy(Qx_grid + dest_row_index, Qx_old_grid + dest_row_index, source_bytes_per_row);
-			memcpy(SGC_Qx_grid + dest_row_index, SGC_Qx_old_grid + dest_row_index, source_bytes_per_row);
-			memcpy(Qy_grid + dest_row_index, Qy_old_grid + dest_row_index, source_bytes_per_row);
-			memcpy(SGC_Qy_grid + dest_row_index, SGC_Qy_old_grid + dest_row_index, source_bytes_per_row);
-			if (j == grid_rows - 1)
-			{
-				memcpy(Qy_grid + dest_row_index + grid_cols_padded, Qy_old_grid + dest_row_index + grid_cols_padded, source_bytes_per_row);
-				memcpy(SGC_Qy_grid + dest_row_index + grid_cols_padded, SGC_Qy_old_grid + dest_row_index + grid_cols_padded, source_bytes_per_row);
-			}
-
-		}
+		
 			
 
 		reduce_Hmax = C(0.0);
@@ -4519,7 +4505,21 @@ void Do_Update(const int grid_cols, const int grid_rows, const int grid_cols_pad
 	// Toby suggest DamFlowVolume go here!!! FEOL
 #pragma omp barrier // ensure all threads have finished their updateQ (nowait) and single section
 	
+	for (int j = 0; j < grid_rows; j++)
+	{
+		int dest_row_index = j * grid_cols_padded;
+		int source_bytes_per_row = sizeof(NUMERIC_TYPE) * grid_cols;
+		memcpy(Qx_old_grid + dest_row_index, Qx_grid + dest_row_index, source_bytes_per_row);
+		memcpy(SGC_Qx_old_grid + dest_row_index, SGC_Qx_grid + dest_row_index, source_bytes_per_row);
+		memcpy(Qy_old_grid + dest_row_index, Qy_grid + dest_row_index, source_bytes_per_row);
+		memcpy(SGC_Qy_old_grid + dest_row_index, SGC_Qy_grid + dest_row_index, source_bytes_per_row);
+		if (j == grid_rows - 1)
+		{
+			memcpy(Qy_old_grid + dest_row_index + grid_cols_padded, Qy_grid + dest_row_index + grid_cols_padded, source_bytes_per_row);
+			memcpy(SGC_Qy_old_grid + dest_row_index + grid_cols_padded, SGC_Qy_grid + dest_row_index + grid_cols_padded, source_bytes_per_row);
+		}
 
+	}
 	
 
 	if (Statesptr->DamMode == ON)
