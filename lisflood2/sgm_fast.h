@@ -33,7 +33,7 @@ void SGC2_UpdateLoadBalance(const int grid_rows, const int grid_cols_padded,
 
 void Fast_IterateLoop(const int grid_cols, const int grid_rows, const int grid_cols_padded,
 	NUMERIC_TYPE *h_grid, NUMERIC_TYPE *volume_grid, 
-	NUMERIC_TYPE *Qx_grid, NUMERIC_TYPE *Qy_grid, NUMERIC_TYPE *Qx_old_grid, NUMERIC_TYPE *Qy_old_grid, NUMERIC_TYPE* SGC_Qx_grid, NUMERIC_TYPE* SGC_Qy_grid,
+	NUMERIC_TYPE *Qx_grid, NUMERIC_TYPE *Qy_grid, NUMERIC_TYPE *Qx_old_grid, NUMERIC_TYPE *Qy_old_grid, NUMERIC_TYPE* SGC_Qx_grid, NUMERIC_TYPE* SGC_Qx_old_grid, NUMERIC_TYPE* SGC_Qy_grid, NUMERIC_TYPE* SGC_Qy_old_grid,
 	NUMERIC_TYPE *maxH_grid, NUMERIC_TYPE *maxHtm_grid, NUMERIC_TYPE *initHtm_grid, NUMERIC_TYPE *totalHtm_grid,
 	NUMERIC_TYPE *maxVc_grid, NUMERIC_TYPE *maxVc_height_grid, NUMERIC_TYPE *maxHazard_grid,
 	NUMERIC_TYPE *Vx_grid, NUMERIC_TYPE *Vy_grid, NUMERIC_TYPE *Vx_max_grid, NUMERIC_TYPE *Vy_max_grid,

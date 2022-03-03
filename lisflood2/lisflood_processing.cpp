@@ -1721,6 +1721,8 @@ void Fast_MainInit(Fnames *Fnameptr, Files *Fptr, States *Statesptr, Pars *Parpt
 	//NUMERIC_TYPE *SGC_c_grid = (NUMERIC_TYPE*)memory_allocate(sizeof(NUMERIC_TYPE) * grid_cols_padded * grid_rows);
 	NUMERIC_TYPE *SGC_Qx_grid = (NUMERIC_TYPE*)memory_allocate(sizeof(NUMERIC_TYPE) * grid_cols_padded * grid_rows);
 	NUMERIC_TYPE *SGC_Qy_grid = (NUMERIC_TYPE*)memory_allocate(sizeof(NUMERIC_TYPE) * grid_cols_padded * (grid_rows + 1));
+	NUMERIC_TYPE* SGC_Qx_old_grid = (NUMERIC_TYPE*)memory_allocate(sizeof(NUMERIC_TYPE) * grid_cols_padded * grid_rows);
+	NUMERIC_TYPE* SGC_Qy_old_grid = (NUMERIC_TYPE*)memory_allocate(sizeof(NUMERIC_TYPE) * grid_cols_padded * (grid_rows + 1));
 	//flood plain flow into cell needs to be removed for the region above the channel (Neil 2012 Figure 1 (C) )
 	//NUMERIC_TYPE *SGC_ChannelWidth_X_grid = (NUMERIC_TYPE*)memory_allocate(sizeof(NUMERIC_TYPE) * grid_cols_padded * grid_rows);
 	//flood plain flow into cell needs to be removed for the region above the channel (Neil 2012 Figure 1 (C) )
@@ -2089,6 +2091,7 @@ void Fast_MainInit(Fnames *Fnameptr, Files *Fptr, States *Statesptr, Pars *Parpt
 			//memset(Fp_xwidth + dest_row_index, 0, dest_bytes_per_row); PFU needs to be initialised before init subgrid
 
 			memset(SGC_Qx_grid + dest_row_index, 0, dest_bytes_per_row);
+			memset(SGC_Qx_old_grid + dest_row_index, 0, dest_bytes_per_row);
 
 
 			if (j == 0)
@@ -2101,6 +2104,7 @@ void Fast_MainInit(Fnames *Fnameptr, Files *Fptr, States *Statesptr, Pars *Parpt
 				memset(Qy_old_grid, 0, dest_bytes_per_row);
 				memset(Qy_grid, 0, dest_bytes_per_row);
 				memset(SGC_Qy_grid, 0, dest_bytes_per_row);
+				memset(SGC_Qy_old_grid, 0, dest_bytes_per_row);
 				memset(Vy_max_grid, 0, dest_bytes_per_row);
 				memset(Vy_grid, 0, dest_bytes_per_row);
 				memset(g_friction_sq_y_grid, 0, dest_bytes_per_row);
@@ -2115,6 +2119,7 @@ void Fast_MainInit(Fnames *Fnameptr, Files *Fptr, States *Statesptr, Pars *Parpt
 			memset(Qy_old_grid + dest_row_index + grid_cols_padded, 0, dest_bytes_per_row);
 			memset(Qy_grid + dest_row_index + grid_cols_padded, 0, dest_bytes_per_row);
 			memset(SGC_Qy_grid + dest_row_index + grid_cols_padded, 0, dest_bytes_per_row);
+			memset(SGC_Qy_old_grid + dest_row_index + grid_cols_padded, 0, dest_bytes_per_row);
 			memset(Vy_max_grid + dest_row_index + grid_cols_padded, 0, dest_bytes_per_row);
 			memset(Vy_grid + dest_row_index + grid_cols_padded, 0, dest_bytes_per_row);
 			//memset(Fp_ywidth + dest_row_index + grid_cols_padded, 0, dest_bytes_per_row); PFU needs to be initialised before init subgrid
@@ -2167,7 +2172,7 @@ void Fast_MainInit(Fnames *Fnameptr, Files *Fptr, States *Statesptr, Pars *Parpt
 #endif
 	Fast_IterateLoop(grid_cols, grid_rows, grid_cols_padded,
 		h_grid, volume_grid,
-		Qx_grid, Qy_grid, Qx_old_grid, Qy_old_grid,SGC_Qx_grid,SGC_Qy_grid,
+		Qx_grid, Qy_grid, Qx_old_grid, Qy_old_grid,SGC_Qx_grid,SGC_Qx_old_grid,SGC_Qy_grid,SGC_Qy_old_grid,
 
 		maxH_grid, maxHtm_grid, initHtm_grid, totalHtm_grid,
 		maxVc_grid, maxVc_height_grid, maxHazard_grid,
