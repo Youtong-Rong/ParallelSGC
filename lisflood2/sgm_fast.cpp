@@ -2886,7 +2886,7 @@ void SGC2_BCs(const int grid_cols, const int grid_rows, const int grid_cols_padd
 			case HFIX2:// HFIX & HVAR boundary
 			case HVAR3:// HFIX & HVAR boundary
 			{
-				if (h_grid[index] + ws.ws_cell.sg_cell_SGC_BankFullHeight[BCi] > depth_thresh)
+				if (true)//h_grid[index] + ws.ws_cell.sg_cell_SGC_BankFullHeight[BCi] > depth_thresh)
 				{
 					NUMERIC_TYPE surface_elevation0;
 					if (ws.Ident[BCi] == HFIX2)
@@ -2906,6 +2906,7 @@ void SGC2_BCs(const int grid_cols, const int grid_rows, const int grid_cols_padd
 						hflow = getmax(surface_elevation0 - z1, h1) + ws.ws_cell.sg_cell_SGC_BankFullHeight[BCi]; // use max of cell depth and boundary depth
 						//h0 is a surface elevation
 						dh = surface_elevation0 - (h1 + z1);
+						if(hflow<depth_thresh) continue;
 
 						surface_slope = dh / (cell_length*SGCptr->SGCm[gr]);
 						//if (edge == 1 || edge == 4) surface_slope = -surface_slope;
