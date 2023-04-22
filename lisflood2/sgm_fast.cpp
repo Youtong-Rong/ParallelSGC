@@ -1543,7 +1543,7 @@ inline void ProcessSubGridQBlock(const int block_index, const int grid_cols_padd
 				qcold = qc;
 				 NUMERIC_TYPE dt = delta_time;
 				NUMERIC_TYPE  u = C(0.0), theta_fix = C(0.0);
-				Qvect = abs(qc);
+				Qvect = fabs(qc);
 				if (grid_index1 - grid_index0 == 1)
 				{
 					u = Qvect / (hflow * dy);
@@ -1821,7 +1821,7 @@ inline void SGC2_UpdateQx_row(const int grid_cols,const int grid_cols_padded,
 			qcold = qc;
 			NUMERIC_TYPE dt = delta_time;
 			NUMERIC_TYPE  u = C(0.0), theta_fix = C(0.0);
-			Qvect = abs(qc);
+			Qvect = FABS(qc);
 			
 			
 			u = Qvect / (hflow * dy);
@@ -1982,7 +1982,7 @@ inline void SGC2_UpdateQy_row(const int grid_cols, const int grid_cols_padded,
 			qcold = qc;
 			NUMERIC_TYPE dt = delta_time;
 			NUMERIC_TYPE  u = C(0.0), theta_fix = C(0.0);
-			Qvect = abs(qc);
+			Qvect = FABS(qc);
 
 			u = Qvect / (hflow * dx);
 			theta_fix = C(1.0) - dt / dy * getmin(u, sqrt(g * hflow));
